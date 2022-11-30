@@ -41,10 +41,11 @@ const isLogin = () => {
             });
           }
           req.userData = decodedPayload;
-          console.log(decodedPayload);
           next();
         }
       );
     });
   };
 };
+
+module.exports = isLogin;
