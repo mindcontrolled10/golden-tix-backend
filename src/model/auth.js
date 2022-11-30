@@ -1,4 +1,4 @@
-const db = require("../config/postgres");
+const db = require("../config/postgre");
 const bcrypt = require("bcrypt");
 const getTimeStamp = require("../helper/getTimeStamp");
 const jwt = require("jsonwebtoken");
