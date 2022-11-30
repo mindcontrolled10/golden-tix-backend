@@ -2,6 +2,8 @@ const db = require("../config/postgre");
 const bcrypt = require("bcrypt");
 const getTimeStamp = require("../helper/getTimeStamp");
 const jwt = require("jsonwebtoken");
+const client = require("../config/redis");
+
 const register = (req) => {
   return new Promise((resolve, reject) => {
     const { email, password, firstName, lastName } = req.body;
@@ -95,6 +97,115 @@ const login = (req) => {
   });
 };
 
-const authRepo = { register, login };
+const logout = (req) => {
+  return new Promise((resolve, reject) => {
+    const token = req.header("x-access-token");
+    const sqlLogout = "DELETE FROM whitelist_token WHERE token = $1";
+    db.query(sqlLogout, [token], (error) => {
+      if (error) {
+        console.log(error);
+        return reject({ status: 500, msg: "Internal Server Error" });
+      }
+      return resolve({ status: 200, msg: "Logout Successful" });
+    });
+  });
+};
+
+const resetPassword = (req) => {
+  return new Promise((resolve, reject) => {
+    const { email, newPassword, otp } = req.body;
+
+    if (email && !newPassword && !otp) {
+      const sqlChekUser = "SELECT email from users where email = $1";
+      db.query(sqlChekUser, [email], (error, result) => {
+        if (error) {
+          console.log(error);
+          return reject({ status: 500, msg: "Internal Server Error" });
+        }
+        if (result.rows.length === 0)
+          return reject({ status: 400, msg: "Your email isn't registered" });
+
+        const generateOtp = Math.floor(100000 + Math.random() * 900000);
+        client
+          .get(email)
+          .then((result) => {
+            if (result) {
+              client
+                .del(email)
+                .then()
+                .catch((error) => {
+                  console.log(error);
+                  return reject({ status: 500, msg: "Internal Server Error" });
+                });
+            }
+            client
+              .set(email, generateOtp, { EX: 120, NX: true })
+              .then(() => {
+                console.log(generateOtp);
+                return resolve({
+                  status: 200,
+                  msg: "Please check your email to reset your password",
+                });
+              })
+              .catch((error) => {
+                console.log(error);
+                return reject({ status: 500, msg: "Internal Server Error" });
+              });
+          })
+          .catch((error) => {
+            console.log(error);
+            return reject({ status: 500, msg: "Internal Server Error" });
+          });
+      });
+    }
+
+    if (email && otp && newPassword) {
+      client
+        .get(email)
+        .then((userOtp) => {
+          if (otp != userOtp) return reject({ status: 401, msg: "Wrong OTP" });
+          bcrypt.hash(newPassword, 10, (error, hashedPwd) => {
+            if (error) {
+              console.log(error);
+              return reject({ status: 500, msg: "Internal Server Error" });
+            }
+            const sqlResetPassword =
+              "UPDATE users SET password = $1, updated_at = to_timestamp($2) where email = $3";
+            const timeStamp = getTimeStamp();
+            db.query(
+              sqlResetPassword,
+              [hashedPwd, timeStamp, email],
+              (error) => {
+                if (error) {
+                  console.log(error);
+                  return reject({ status: 500, msg: "Internal Server Error" });
+                }
+                client
+                  .del(email)
+                  .then(() => {
+                    return resolve({
+                      status: 200,
+                      msg: "Password Reset Success",
+                    });
+                  })
+                  .catch((error) => {
+                    console.log(error);
+                    return reject({
+                      status: 500,
+                      msg: "Internal Server Error",
+                    });
+                  });
+              }
+            );
+          });
+        })
+        .catch((error) => {
+          console.log(error);
+          return reject({ status: 500, msg: "Internal Server Error" });
+        });
+    }
+  });
+};
+const authRepo = { register, login, logout, resetPassword };
 
 module.exports = authRepo;
