@@ -2,7 +2,7 @@ const db = require("../config/postgre");
 const bcrypt = require("bcrypt");
 const getTimeStamp = require("../helper/getTimeStamp");
 const jwt = require("jsonwebtoken");
-const client = require("../config/redis");
+const { createOtp } = require("../helper/createOtp");
 
 const register = (req) => {
   return new Promise((resolve, reject) => {
@@ -122,99 +122,73 @@ const logout = (req) => {
   });
 };
 
-const resetPassword = (req) => {
+const forgotPassword = (req) => {
   return new Promise((resolve, reject) => {
-    const { email, newPassword, otp } = req.body;
-
-    if (email && !newPassword && !otp) {
-      const sqlChekUser = "SELECT email from users where email = $1";
-      db.query(sqlChekUser, [email], (error, result) => {
+    const { email } = req.body;
+    const generateOtp = createOtp();
+    const sqlCheckUser = "select email, first_name from users where email = $1";
+    db.query(sqlCheckUser, [email], (error, result) => {
+      if (error) {
+        console.log(error);
+        return reject({ status: 500, msg: "Internal Server Error" });
+      }
+      if (result.rows.length === 0)
+        return reject({ status: 404, msg: "Email Isn't Registered" });
+      const sqlCreateOtp =
+        "update users set password_otp = $1 where email = $2 returning password_otp";
+      const firstName = result.rows[0].first_name;
+      db.query(sqlCreateOtp, [generateOtp, email], (error, result) => {
         if (error) {
           console.log(error);
           return reject({ status: 500, msg: "Internal Server Error" });
         }
-        if (result.rows.length === 0)
-          return reject({ status: 400, msg: "Your email isn't registered" });
-
-        const generateOtp = Math.floor(100000 + Math.random() * 900000);
-        client
-          .get(email)
-          .then((result) => {
-            if (result) {
-              client
-                .del(email)
-                .then()
-                .catch((error) => {
-                  console.log(error);
-                  return reject({ status: 500, msg: "Internal Server Error" });
-                });
-            }
-            client
-              .set(email, generateOtp, { EX: 120, NX: true })
-              .then(() => {
-                console.log(generateOtp);
-                return resolve({
-                  status: 200,
-                  msg: "Please check your email to reset your password",
-                });
-              })
-              .catch((error) => {
-                console.log(error);
-                return reject({ status: 500, msg: "Internal Server Error" });
-              });
-          })
-          .catch((error) => {
-            console.log(error);
-            return reject({ status: 500, msg: "Internal Server Error" });
-          });
+        return resolve({
+          otp: result.rows[0].password_otp,
+          firstName,
+        });
       });
-    }
+    });
+  });
+};
 
-    if (email && otp && newPassword) {
-      client
-        .get(email)
-        .then((userOtp) => {
-          if (otp != userOtp) return reject({ status: 401, msg: "Wrong OTP" });
-          bcrypt.hash(newPassword, 10, (error, hashedPwd) => {
-            if (error) {
-              console.log(error);
-              return reject({ status: 500, msg: "Internal Server Error" });
-            }
-            const sqlResetPassword =
-              "UPDATE users SET password = $1, updated_at = to_timestamp($2) where email = $3";
-            const timeStamp = getTimeStamp();
-            db.query(
-              sqlResetPassword,
-              [hashedPwd, timeStamp, email],
-              (error) => {
-                if (error) {
-                  console.log(error);
-                  return reject({ status: 500, msg: "Internal Server Error" });
-                }
-                client
-                  .del(email)
-                  .then(() => {
-                    return resolve({
-                      status: 200,
-                      msg: "Password Reset Success",
-                    });
-                  })
-                  .catch((error) => {
-                    console.log(error);
-                    return reject({
-                      status: 500,
-                      msg: "Internal Server Error",
-                    });
-                  });
-              }
-            );
-          });
-        })
-        .catch((error) => {
+const resetPassword = (req) => {
+  return new Promise((resolve, reject) => {
+    const { otp, newPassword, confirmPassword } = req.body;
+    if (newPassword !== confirmPassword)
+      return reject({
+        status: 400,
+        msg: "Password Isnt Matched",
+      });
+    const sqlGetUser =
+      "select id, password_otp from users where password_otp = $1";
+    db.query(sqlGetUser, [otp], (error, result) => {
+      if (error) {
+        console.log(error);
+        return reject({ status: 500, msg: "Internal Server Error" });
+      }
+      if (result.rows.length === 0)
+        return reject({ status: 400, msg: "Wrong OTP" });
+      const id = result.rows[0].id;
+      bcrypt.hash(newPassword, 10, (error, hashedPwd) => {
+        if (error) {
           console.log(error);
           return reject({ status: 500, msg: "Internal Server Error" });
+        }
+        const sqlResetPassword =
+          "update users set password = $1, updated_at = to_timestamp($2), password_otp = $3 where id = $4 returning id";
+        const values = [hashedPwd, getTimeStamp(), null, id];
+        db.query(sqlResetPassword, values, (error, result) => {
+          if (error) {
+            console.log(error);
+            return reject({ status: 500, msg: "Internal Server Error" });
+          }
+          return resolve({
+            status: 200,
+            msg: "Success, please Login with your new password",
+          });
         });
-    }
+      });
+    });
   });
 };
 
@@ -249,6 +223,13 @@ const verify = (req) => {
     });
   });
 };
-const authRepo = { register, login, logout, resetPassword, verify };
+const authRepo = {
+  register,
+  login,
+  logout,
+  forgotPassword,
+  resetPassword,
+  verify,
+};
 
 module.exports = authRepo;

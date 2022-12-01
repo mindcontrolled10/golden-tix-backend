@@ -40,6 +40,26 @@ const logout = async (req, res) => {
   }
 };
 
+const forgotPassword = async (req, res) => {
+  try {
+    const forgot = await authRepo.forgotPassword(req);
+    const linkDirect = req.body.linkDirect;
+    console.log(req.body);
+    const setSendMail = {
+      to: req.body.email,
+      subject: "Reset Password",
+      name: forgot.firstName,
+      template: "verifyPasswordOtp.html",
+      link: `${linkDirect}?otp=${forgot.otp}`,
+    };
+    const response = await mailSender(setSendMail);
+    return resHelper.success(res, response.status, response);
+  } catch (error) {
+    console.log(error);
+    return resHelper.error(res, error.status, error);
+  }
+};
+
 const resetPassword = async (req, res) => {
   try {
     const response = await authRepo.resetPassword(req);
@@ -62,6 +82,7 @@ const authController = {
   register,
   login,
   logout,
+  forgotPassword,
   resetPassword,
   verify,
 };

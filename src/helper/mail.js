@@ -1,6 +1,6 @@
 const fs = require("fs");
 const mustache = require("mustache");
-
+const nodemailer = require("nodemailer");
 const { google } = require("googleapis");
 
 const clientId = process.env.GOOGLE_CLIENT_ID;
@@ -39,6 +39,7 @@ module.exports = {
         `src/templates/email/${data.template}`,
         "utf8"
       );
+      // console.log(template);
 
       const mailOption = {
         from: '"Golden-Tix" <fcb.nyak@gmail.com>',
@@ -54,7 +55,7 @@ module.exports = {
         }
         return resolve({
           status: 200,
-          msg: "Create account success, check email to verify",
+          msg: "Success, check email to verify",
         });
       });
     });
