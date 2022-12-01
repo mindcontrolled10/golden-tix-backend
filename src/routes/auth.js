@@ -12,4 +12,5 @@ authRouter.post(
 
 authRouter.delete("/logout", isLogin(), authController.logout);
 authRouter.patch("/reset-password", authController.resetPassword);
+authRouter.get("/verify/:otp", authController.verify);
 module.exports = authRouter;
