@@ -206,6 +206,12 @@ const resetPassword = (req) => {
     }
   });
 };
+
+const verify = (req) => {
+  return new Promise((resolve, reject) => {
+    const otp = req.body;
+  });
+};
 const authRepo = { register, login, logout, resetPassword };
 
 module.exports = authRepo;
