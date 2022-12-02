@@ -1,4 +1,4 @@
-const cloudinary = require("../config/clodunary");
+const cloudinary = require("../config/cloudinary");
 const dataUriParser = require("datauri/parser");
 const path = require("path");
 
