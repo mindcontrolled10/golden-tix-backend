@@ -12,7 +12,8 @@ const createMovie = async (req, res) => {
     const showTime = await movieRepo.createMovieShowTime(
       req.body.cinemasLocationsId,
       createMovie.id,
-      req.body.showDate
+      req.body.showDate,
+      req.body.schedules
     );
     resHelper.success(res, 200, {
       data: showTime.data,

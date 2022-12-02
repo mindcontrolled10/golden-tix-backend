@@ -16,6 +16,7 @@ const newMoviesBody = [
   "genreId",
   "cinemasLocationsId",
   "showDate",
+  "schedules",
 ];
 
 moviesRouter.post(

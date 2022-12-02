@@ -75,7 +75,7 @@ const createMovieShowTime = (cinemasLocations, movieId, showDate) =>
       }
       prepareValues.push(id, movieId, showDate, getTimeStamp());
     });
-    const query = `INSERT INTO movies_cinemas_locations (cinemas_locations_id, movie_id, show_date, created_at) ${values} returning id, show_date`;
+    const query = `INSERT INTO movies_cinemas_locations (cinemas_locations_id, movie_id, show_date, created_at) ${values} returning *`;
     db.query(query, prepareValues, (error, result) => {
       if (error) {
         console.log(error);
