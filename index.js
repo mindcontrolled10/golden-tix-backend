@@ -7,7 +7,7 @@ const mainRouter = require("./src/routes/main");
 const server = express();
 const cors = require("cors");
 const { raw } = require("express");
-require("./src/config/redis");
+// require("./src/config/redis");
 const corsOptions = {
   origin: "*",
 };
