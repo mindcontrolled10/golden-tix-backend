@@ -29,7 +29,7 @@ const isLogin = () => {
         token,
         process.env.SECRET_KEY,
         {
-          expiresIn: "60m",
+          expiresIn: "24h",
           issuer: process.env.ISSUER,
         },
         (error, decodedPayload) => {
@@ -37,7 +37,7 @@ const isLogin = () => {
             console.log(error);
             return resHelper.error(res, 500, {
               status: 500,
-              msg: "Internal Server Error",
+              msg: error.message,
             });
           }
           req.userData = decodedPayload;

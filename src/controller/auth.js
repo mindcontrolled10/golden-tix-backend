@@ -11,7 +11,7 @@ const register = async (req, res) => {
       subject: "Email Verification",
       name: req.body.firstName,
       template: "verifyEmail.html",
-      link: `http://localhost:8080/api/auth/verify/${regist.otp}`,
+      link: `https://golden-tix-backend.vercel.app/api/auth/verify/${regist.otp}`,
       imgUrl:
         "https://res.cloudinary.com/dedmbkp9a/image/upload/v1669954703/Golden-tix/logo-golden_wll98o.png",
     };
