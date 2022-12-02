@@ -3,7 +3,7 @@ const db = require("../config/postgre");
 const getProfile = (id) => {
   return new Promise((resolve, reject) => {
     const sqlGetProfile =
-      "select u.username, u.first_name , u.last_name , u.email , u.phone, r.role_name  from users u join roles r on r.id = u.role_id where u.id = $1";
+      "select u.username, u.first_name , u.last_name , u.email , u.phone, u.image from users u where u.id = $1";
     db.query(sqlGetProfile, [id], (error, result) => {
       if (error) {
         console.log(error);
@@ -25,7 +25,7 @@ const editProfile = (id, body, file) => {
     let query = "update users set ";
     let imageUrl = "";
     if (file) {
-      imageUrl = `${file.url}`;
+      imageUrl = `${file}`;
       if (Object.keys(body).length > 0) {
         query += `image = '${imageUrl}', `;
       }
@@ -53,10 +53,13 @@ const editProfile = (id, body, file) => {
         return reject({ status: 500, msg: "Internal Server Error" });
       }
       console.log(values, query);
-      console.log(result);
+      console.log(body, "INII");
       let data = {};
-      if (file) data = { Image: imageUrl, ...result.rows[0] };
-      data = { Image: imageUrl, ...result.rows[0] };
+      if (file) {
+        data = { Image: imageUrl, ...body };
+      } else {
+        data = { ...body };
+      }
       return resolve({
         status: 200,
         msg: `${result.rows[0].username} Your profile updated successfully`,
