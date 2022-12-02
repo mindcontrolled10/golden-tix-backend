@@ -12,6 +12,8 @@ const register = async (req, res) => {
       name: req.body.firstName,
       template: "verifyEmail.html",
       link: `http://localhost:8080/api/auth/verify/${regist.otp}`,
+      imgUrl:
+        "https://res.cloudinary.com/dedmbkp9a/image/upload/v1669954703/Golden-tix/logo-golden_wll98o.png",
     };
     const response = await mailSender(setSendMail);
 
@@ -51,6 +53,8 @@ const forgotPassword = async (req, res) => {
       name: forgot.firstName,
       template: "verifyPasswordOtp.html",
       link: `${linkDirect}?otp=${forgot.otp}`,
+      imgUrl:
+        "https://res.cloudinary.com/dedmbkp9a/image/upload/v1669954703/Golden-tix/logo-golden_wll98o.png",
     };
     const response = await mailSender(setSendMail);
     return resHelper.success(res, response.status, response);

@@ -10,16 +10,17 @@ const uploaderCloudinary = async (req, res, next) => {
   const buffer = file.buffer;
   const ext = path.extname(file.originalname).toString();
   const datauri = parser.format(ext, buffer);
-  const clodunaryOpt = {
+  const clodinaryOpt = {
     public_id: `${Math.floor(Math.random() * 10e9)}`,
-    folder: "Spectrum",
+    folder: "Golden-tix",
   };
   try {
     const result = await cloudinary.uploader.upload(
       datauri.content,
-      clodunaryOpt
+      clodinaryOpt
     );
-    req.file = result;
+    req.file = `${result.public_id}.${result.format}`;
+    console.log(req.file);
     next();
   } catch (error) {
     console.log(error);

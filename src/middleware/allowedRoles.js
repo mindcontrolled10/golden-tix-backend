@@ -1,6 +1,6 @@
 const allowedRoles = (...allowed) => {
   return (req, res, next) => {
-    const role = req.userPayload.roles_id;
+    const role = req.userData.role;
     console.log(role);
     let isAllowed = false;
     for (let allowedRole of allowed) {

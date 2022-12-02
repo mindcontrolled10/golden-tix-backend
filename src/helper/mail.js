@@ -2,7 +2,7 @@ const fs = require("fs");
 const mustache = require("mustache");
 const nodemailer = require("nodemailer");
 const { google } = require("googleapis");
-
+const path = require("path");
 const clientId = process.env.GOOGLE_CLIENT_ID;
 const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
 const refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
@@ -36,8 +36,8 @@ module.exports = {
       });
 
       const template = fs.readFileSync(
-        `src/templates/email/${data.template}`,
-        "utf8"
+        path.join(__dirname, "..", "templates", "email", `${data.template}`),
+        "utf-8"
       );
       // console.log(template);
 
