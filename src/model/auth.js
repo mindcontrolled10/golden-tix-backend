@@ -80,7 +80,7 @@ const login = (req) => {
           payload,
           process.env.SECRET_KEY,
           {
-            expiresIn: "60m",
+            expiresIn: "24h",
             issuer: process.env.ISSUER,
           },
           (error, token) => {
