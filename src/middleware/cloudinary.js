@@ -12,7 +12,7 @@ const uploaderCloudinary = async (req, res, next) => {
   const datauri = parser.format(ext, buffer);
   const clodunaryOpt = {
     public_id: `${Math.floor(Math.random() * 10e9)}`,
-    folder: "Spectrum",
+    folder: "Golden-tix",
   };
   try {
     const result = await cloudinary.uploader.upload(
