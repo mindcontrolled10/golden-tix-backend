@@ -12,12 +12,11 @@ const createMovie = (req) => {
       releaseDate,
       duration,
       director,
-      price,
       image,
       getTimeStamp(),
     ];
     const sqlMovie =
-      "INSERT INTO movies (movie_name, synopsis, release_date, duration, director, price, image, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, to_timestamp($8)) returning *";
+      "INSERT INTO movies (movie_name, synopsis, release_date, duration, director, image, created_at) VALUES ($1, $2, $3, $4, $5, $6, to_timestamp($7)) returning *";
 
     db.query(sqlMovie, movieValues, (error, result) => {
       if (error) {
@@ -139,6 +138,7 @@ const createScheduleMovie = (showTimeIds, schedules) =>
     });
     // return resolve({ values, prepareValues });
   });
+
 const createMovieCast = (castIds, movieId) =>
   new Promise((resolve, reject) => {
     const castList = JSON.parse(castIds);
@@ -167,6 +167,58 @@ const createMovieCast = (castIds, movieId) =>
       return resolve(ids);
     });
   });
+
+const getNowShowingMovies = (req) =>
+  new Promise((resolve, reject) => {
+    const { page, limit } = req.query;
+    const sqlLimit = parseInt(limit) || 5;
+    const sqlOffset =
+      !page || page === "1" ? 0 : (parseInt(page) - 1) * sqlLimit;
+
+    const query =
+      "select distinct on (m.movie_name)  m.movie_name, m.image, string_agg(distinct (g.genre_name) , ', ')genres, m.id from movies m join movies_cinemas_locations mcl on mcl.movie_id = m.id join movies_genres mg on m.id = mg.movie_id join genres g on g.id = mg.genre_id where  mcl.show_date = current_date group by movie_name, m.image, m.id limit $1 offset $2";
+
+    const countQuery =
+      "select count (distinct movie_name) from movies m join movies_cinemas_locations mcl on mcl.movie_id = m.id where  mcl.show_date = current_date";
+    db.query(countQuery, (err, result) => {
+      if (err) {
+        console.log(err);
+        return reject({ status: 500, msg: "Internal Sever Error" });
+      }
+      if (result.rows.length === 0)
+        return reject({ status: 400, msg: "Movie not found" });
+      const totalData = parseInt(result.rows[0].count);
+      const currentPage = parseInt(page) || 1;
+      const totalPage =
+        sqlLimit > totalData ? 1 : Math.ceil(totalData / sqlLimit);
+      const prev =
+        currentPage === 1 ? null : `?limit=${sqlLimit}&page=${currentPage - 1}`;
+      const next =
+        currentPage === totalPage
+          ? null
+          : `?limit=${sqlLimit}&page=${currentPage + 1}`;
+      const meta = {
+        page: parseInt(currentPage),
+        totalData: parseInt(totalData),
+        limit: parseInt(sqlLimit),
+        prev,
+        next,
+      };
+      db.query(query, [sqlLimit, sqlOffset], (error, result) => {
+        if (error) {
+          console.log(error);
+          return reject({ status: 500, msg: "Internal Server Error" });
+        }
+        return resolve({
+          status: 200,
+          msg: "Now Showing list",
+          data: result.rows,
+          meta,
+        });
+      });
+    });
+  });
+
 const getUpcomingMovies = (req) =>
   new Promise((resolve, reject) => {
     const { page, limit } = req.query;
@@ -175,7 +227,7 @@ const getUpcomingMovies = (req) =>
       !page || page === "1" ? 0 : (parseInt(page) - 1) * sqlLimit;
 
     const query =
-      "select distinct on (m.movie_name)  m.movie_name, m.image, string_agg(distinct (g.genre_name) , ', ')genres from movies m join movies_cinemas_locations mcl on mcl.movie_id = m.id join movies_genres mg on m.id = mg.movie_id join genres g on g.id = mg.genre_id where  mcl.show_date > current_date and m.movie_name not in(select m2.movie_name from movies m2 join movies_cinemas_locations mcl2 on mcl2.movie_id = m2.id where mcl2.show_date = current_date) group by movie_name, m.image limit $1 offset $2";
+      "select distinct on (m.movie_name)  m.movie_name, m.image, string_agg(distinct (g.genre_name) , ',')genres, m.id from movies m join movies_cinemas_locations mcl on mcl.movie_id = m.id join movies_genres mg on m.id = mg.movie_id join genres g on g.id = mg.genre_id where  mcl.show_date > current_date and m.movie_name not in(select m2.movie_name from movies m2 join movies_cinemas_locations mcl2 on mcl2.movie_id = m2.id where mcl2.show_date = current_date) group by movie_name, m.image, m.id limit $1 offset $2";
 
     const countQuery =
       "select count (distinct movie_name) from movies m  join movies_cinemas_locations mcl on mcl.movie_id = m.id where  mcl.show_date > current_date and m.movie_name not in(select m2.movie_name from movies m2 join movies_cinemas_locations mcl2 on mcl2.movie_id = m2.id where mcl2.show_date = current_date)";
@@ -208,12 +260,35 @@ const getUpcomingMovies = (req) =>
           console.log(error);
           return reject({ status: 500, msg: "Internal Server Error" });
         }
+        const resultData = result.rows.map((e) => {
+          return (e = { ...e, genres: e.genres.split(",") });
+        });
         return resolve({
           status: 200,
           msg: "Upcoming Movie List",
-          data: result.rows,
+          data: resultData,
           meta,
         });
+      });
+    });
+  });
+
+const getDetailMovie = (id) =>
+  new Promise((resolve, reject) => {
+    const query =
+      "select m.id, m.movie_name, m.synopsis, m.release_date, m.duration, m.director, m.image, string_agg(distinct(g.genre_name), ',') as genres, string_agg(distinct(c.cast_name), ',') as casts from movies m join movies_genres mg on mg.movie_id = m.id  join genres g on g.id = mg.genre_id join movies_casts mc on mc.movie_id = m.id join casts c on c.id = mc.cast_id where m.id = $1 group by m.id, m.movie_name, m.synopsis, m.release_date, m.duration, m.director, m.image";
+    db.query(query, [id], (error, result) => {
+      if (error) {
+        console.log(error);
+        return reject({ status: 500, msg: "Internal Server Error" });
+      }
+      if (result.rows.length === 0)
+        return reject({ status: 404, msg: "Movie not found" });
+      const genres = result.rows[0].genres.split(",");
+      const casts = result.rows[0].casts.split(",");
+      return resolve({
+        status: 200,
+        data: { ...result.rows[0], genres, casts },
       });
     });
   });
@@ -224,5 +299,7 @@ const movieRepo = {
   createScheduleMovie,
   createMovieCast,
   getUpcomingMovies,
+  getNowShowingMovies,
+  getDetailMovie,
 };
 module.exports = movieRepo;
