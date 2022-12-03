@@ -96,5 +96,133 @@ const createMovieShowTime = (cinemasLocations, movieId, showDate) =>
     });
   });
 
-const movieRepo = { createMovie, createMovieGenre, createMovieShowTime };
+const createScheduleMovie = (showTimeIds, schedules) =>
+  new Promise((resolve, reject) => {
+    const scheduleList = JSON.parse(schedules);
+    const prepareValues = [];
+    let values = "VALUES";
+    let counter = 1;
+    showTimeIds.forEach((showtimeId, index, array) => {
+      if (index !== array.length - 1) {
+        scheduleList.forEach((scheduleId, index, array) => {
+          values += `($${counter}, $${counter + 1}, to_timestamp($${
+            counter + 2
+          })), `;
+          counter += array.length;
+          prepareValues.push(showtimeId, scheduleId, getTimeStamp());
+        });
+      } else {
+        scheduleList.forEach((scheduleId, index, array) => {
+          if (index !== array.length - 1) {
+            values += `($${counter}, $${counter + 1}, to_timestamp($${
+              counter + 2
+            })), `;
+          } else {
+            values += `($${counter}, $${counter + 1}, to_timestamp($${
+              counter + 2
+            }))`;
+          }
+          counter += array.length;
+          prepareValues.push(showtimeId, scheduleId, getTimeStamp());
+        });
+      }
+    });
+    const sqlSchedule = `INSERT INTO showtimes_schedules (showtime_id, schedule_id, created_at) ${values} returning id`;
+    db.query(sqlSchedule, prepareValues, (error, result) => {
+      if (error) {
+        console.log(error);
+        return reject({ status: 500, msg: "Internal Sever Error" });
+      }
+      const ids = [];
+      result.rows.forEach((e) => ids.push(e.id));
+      return resolve(ids);
+    });
+    // return resolve({ values, prepareValues });
+  });
+const createMovieCast = (castIds, movieId) =>
+  new Promise((resolve, reject) => {
+    const castList = JSON.parse(castIds);
+    let values = "VALUES";
+    const prepareValues = [];
+    castList.forEach((castId, index, array) => {
+      if (index !== array.length - 1) {
+        values += `($${1 + index * 3}, $${2 + index * 3},  to_timestamp($${
+          3 + index * 3
+        })), `;
+      } else {
+        values += `($${1 + index * 3}, $${2 + index * 3},  to_timestamp($${
+          3 + index * 3
+        }))`;
+      }
+      prepareValues.push(movieId, castId, getTimeStamp());
+    });
+    const sqlMovieCasts = `INSERT INTO movies_casts (movie_id, cast_id, created_at) ${values}`;
+    db.query(sqlMovieCasts, prepareValues, (error, result) => {
+      if (error) {
+        console.log(error);
+        return reject({ status: 500, msg: "Internal Sever Error" });
+      }
+      const ids = [];
+      result.rows.forEach((e) => ids.push(e.id));
+      return resolve(ids);
+    });
+  });
+const getUpcomingMovies = (req) =>
+  new Promise((resolve, reject) => {
+    const { page, limit } = req.query;
+    const sqlLimit = parseInt(limit) || 5;
+    const sqlOffset =
+      !page || page === "1" ? 0 : (parseInt(page) - 1) * sqlLimit;
+
+    const query =
+      "select distinct on (m.movie_name)  m.movie_name, m.image, string_agg(distinct (g.genre_name) , ', ')genres from movies m join movies_cinemas_locations mcl on mcl.movie_id = m.id join movies_genres mg on m.id = mg.movie_id join genres g on g.id = mg.genre_id where  mcl.show_date > current_date and m.movie_name not in(select m2.movie_name from movies m2 join movies_cinemas_locations mcl2 on mcl2.movie_id = m2.id where mcl2.show_date = current_date) group by movie_name, m.image limit $1 offset $2";
+
+    const countQuery =
+      "select count (distinct movie_name) from movies m  join movies_cinemas_locations mcl on mcl.movie_id = m.id where  mcl.show_date > current_date and m.movie_name not in(select m2.movie_name from movies m2 join movies_cinemas_locations mcl2 on mcl2.movie_id = m2.id where mcl2.show_date = current_date)";
+    db.query(countQuery, (err, result) => {
+      if (err) {
+        console.log(err);
+        return reject({ status: 500, msg: "Internal Sever Error" });
+      }
+      if (result.rows.length === 0)
+        return reject({ status: 400, msg: "Movie not found" });
+      const totalData = parseInt(result.rows[0].count);
+      const currentPage = parseInt(page) || 1;
+      const totalPage =
+        sqlLimit > totalData ? 1 : Math.ceil(totalData / sqlLimit);
+      const prev =
+        currentPage === 1 ? null : `?limit=${sqlLimit}&page=${currentPage - 1}`;
+      const next =
+        currentPage === totalPage
+          ? null
+          : `?limit=${sqlLimit}&page=${currentPage + 1}`;
+      const meta = {
+        page: parseInt(currentPage),
+        totalData: parseInt(totalData),
+        limit: parseInt(sqlLimit),
+        prev,
+        next,
+      };
+      db.query(query, [sqlLimit, sqlOffset], (error, result) => {
+        if (error) {
+          console.log(error);
+          return reject({ status: 500, msg: "Internal Server Error" });
+        }
+        return resolve({
+          status: 200,
+          msg: "Upcoming Movie List",
+          data: result.rows,
+          meta,
+        });
+      });
+    });
+  });
+const movieRepo = {
+  createMovie,
+  createMovieGenre,
+  createMovieShowTime,
+  createScheduleMovie,
+  createMovieCast,
+  getUpcomingMovies,
+};
 module.exports = movieRepo;

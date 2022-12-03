@@ -16,15 +16,17 @@ const newMoviesBody = [
   "genreId",
   "cinemasLocationsId",
   "showDate",
-  "schedules",
+  "schedulesId",
+  "castIds",
 ];
-
+moviesRouter.get("/upcoming", movieController.getUpcomingMovies);
 moviesRouter.post(
   "/new",
   isLogin(),
   allowedRoles("admin"),
   upload,
   cloudinary,
+  validate.chekUpload(),
   validate.body(...newMoviesBody),
   movieController.createMovie
 );

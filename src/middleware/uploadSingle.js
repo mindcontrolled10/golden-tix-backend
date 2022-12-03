@@ -6,7 +6,7 @@ const multerOption = {
   memory,
   fileFilter: (req, file, cb) => {
     const ext = path.extname(file.originalname);
-    const allowedExt = /png|jpg|jpeg/;
+    const allowedExt = /png|jpg|jpeg|webp/;
     if (!allowedExt.test(ext)) return cb(new Error("invalid Data Type"), false);
     cb(null, true);
   },
