@@ -3,7 +3,7 @@ const db = require("../config/postgre");
 const getProfile = (id) => {
   return new Promise((resolve, reject) => {
     const sqlGetProfile =
-      "select u.username, u.first_name , u.last_name , u.email , u.phone, u.image from users u where u.id = $1";
+      "select u.username, u.first_name , u.last_name , u.full_name, u.email , u.phone, u.image from users u where u.id = $1";
     db.query(sqlGetProfile, [id], (error, result) => {
       if (error) {
         console.log(error);
