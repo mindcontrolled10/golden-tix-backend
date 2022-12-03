@@ -39,6 +39,28 @@ const getUpcomingMovies = async (req, res) => {
   }
 };
 
-const movieController = { createMovie, getUpcomingMovies };
+const getshowingMovies = async (req, res) => {
+  try {
+    const response = await movieRepo.getNowShowingMovies(req);
+    resHelper.success(res, response.status, response);
+  } catch (error) {
+    resHelper.error(res, error.status, error);
+  }
+};
+const getDetailMovie = async (req, res) => {
+  try {
+    const response = await movieRepo.getDetailMovie(req.params.id);
+    resHelper.success(res, response.status, response);
+  } catch (error) {
+    console.log(error);
+    resHelper.error(res, error.status, error);
+  }
+};
+const movieController = {
+  createMovie,
+  getUpcomingMovies,
+  getshowingMovies,
+  getDetailMovie,
+};
 
 module.exports = movieController;

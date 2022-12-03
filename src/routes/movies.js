@@ -12,7 +12,6 @@ const newMoviesBody = [
   "releaseDate",
   "duration",
   "director",
-  "price",
   "genreId",
   "cinemasLocationsId",
   "showDate",
@@ -20,6 +19,8 @@ const newMoviesBody = [
   "castIds",
 ];
 moviesRouter.get("/upcoming", movieController.getUpcomingMovies);
+moviesRouter.get("/showing", movieController.getshowingMovies);
+moviesRouter.get("/details/:id", isLogin(), movieController.getDetailMovie);
 moviesRouter.post(
   "/new",
   isLogin(),
