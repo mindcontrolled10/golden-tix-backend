@@ -7,6 +7,7 @@ const { createOtp } = require("../helper/createOtp");
 const register = (req) => {
   return new Promise((resolve, reject) => {
     const { email, password, firstName, lastName } = req.body;
+    const fullName = `${firstName} ${lastName}`;
     const role = 1;
     const checkEmailQuery = "select email from users where email = $1";
     db.query(checkEmailQuery, [email], (error, result) => {
@@ -33,9 +34,10 @@ const register = (req) => {
           lastName,
           generateOtp,
           0,
+          fullName,
         ];
         const query =
-          "INSERT INTO users(email, password, role_id, created_at, first_name, last_name, register_otp, status) values ($1, $2, $3, to_timestamp($4), $5, $6, $7 ,$8) returning register_otp";
+          "INSERT INTO users(email, password, role_id, created_at, first_name, last_name, register_otp, status, full_name) values ($1, $2, $3, to_timestamp($4), $5, $6, $7, $8, $9) returning register_otp";
         db.query(query, values, (error, result) => {
           if (error) {
             console.log(error);
