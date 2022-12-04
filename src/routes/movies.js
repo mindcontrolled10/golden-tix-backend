@@ -18,6 +18,8 @@ const newMoviesBody = [
   "schedulesId",
   "castIds",
 ];
+moviesRouter.get("/casts", isLogin(), movieController.getCasts);
+moviesRouter.get("/genres", isLogin(), movieController.getGenres);
 moviesRouter.get("/upcoming", movieController.getUpcomingMovies);
 moviesRouter.get("/showing", movieController.getshowingMovies);
 moviesRouter.get("/details/:id", isLogin(), movieController.getDetailMovie);

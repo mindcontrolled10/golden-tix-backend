@@ -292,6 +292,30 @@ const getDetailMovie = (id) =>
       });
     });
   });
+
+const getCasts = () =>
+  new Promise((resolve, reject) => {
+    const query = "select id as cast_id, cast_name from casts";
+    db.query(query, (error, result) => {
+      if (error) {
+        console.log(error);
+        return reject({ status: 500, msg: "Internal Server Error" });
+      }
+      return resolve({ status: 200, msg: "Cast List", data: result.rows });
+    });
+  });
+
+const getGenres = () =>
+  new Promise((resolve, reject) => {
+    const query = "select id as genre_id, genre_name from genres";
+    db.query(query, (error, result) => {
+      if (error) {
+        console.log(error);
+        return reject({ status: 500, msg: "Internal Server Error" });
+      }
+      return resolve({ status: 200, msg: "genres List", data: result.rows });
+    });
+  });
 const movieRepo = {
   createMovie,
   createMovieGenre,
@@ -301,5 +325,7 @@ const movieRepo = {
   getUpcomingMovies,
   getNowShowingMovies,
   getDetailMovie,
+  getCasts,
+  getGenres,
 };
 module.exports = movieRepo;

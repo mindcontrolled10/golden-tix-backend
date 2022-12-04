@@ -56,11 +56,31 @@ const getDetailMovie = async (req, res) => {
     resHelper.error(res, error.status, error);
   }
 };
+const getCasts = async (req, res) => {
+  try {
+    const response = await movieRepo.getCasts();
+    resHelper.success(res, response.status, response);
+  } catch (error) {
+    console.log(error);
+    resHelper.error(res, error.status, error);
+  }
+};
+const getGenres = async (req, res) => {
+  try {
+    const response = await movieRepo.getGenres();
+    resHelper.success(res, response.status, response);
+  } catch (error) {
+    console.log(error);
+    resHelper.error(res, error.status, error);
+  }
+};
 const movieController = {
   createMovie,
   getUpcomingMovies,
   getshowingMovies,
   getDetailMovie,
+  getCasts,
+  getGenres,
 };
 
 module.exports = movieController;
