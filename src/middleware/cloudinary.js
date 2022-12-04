@@ -20,7 +20,6 @@ const uploaderCloudinary = async (req, res, next) => {
       clodinaryOpt
     );
     req.file = `${result.public_id}.${result.format}`;
-    console.log(req.file);
     next();
   } catch (error) {
     console.log(error);
