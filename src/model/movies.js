@@ -103,11 +103,11 @@ const createScheduleMovie = (showTimeIds, schedules) =>
     let counter = 1;
     showTimeIds.forEach((showtimeId, index, array) => {
       if (index !== array.length - 1) {
-        scheduleList.forEach((scheduleId, index, array) => {
+        scheduleList.forEach((scheduleId) => {
           values += `($${counter}, $${counter + 1}, to_timestamp($${
             counter + 2
           })), `;
-          counter += array.length;
+          counter += 3;
           prepareValues.push(showtimeId, scheduleId, getTimeStamp());
         });
       } else {
@@ -121,7 +121,7 @@ const createScheduleMovie = (showTimeIds, schedules) =>
               counter + 2
             }))`;
           }
-          counter += array.length;
+          counter += 3;
           prepareValues.push(showtimeId, scheduleId, getTimeStamp());
         });
       }
