@@ -19,5 +19,28 @@ const getCinemasByLocation = async (req, res) => {
   }
 };
 
-const cinemaController = { getCinemaSchedule, getCinemasByLocation };
+const getLocations = async (req, res) => {
+  try {
+    const response = await cinemaRepo.getLocations();
+    resHelper.success(res, response.status, response);
+  } catch (error) {
+    resHelper.error(res, error.status, error);
+  }
+};
+
+const getCinemasBySchedule = async (req, res) => {
+  try {
+    const response = await cinemaRepo.getCinemasBySchedule(req);
+    resHelper.success(res, response.status, response);
+  } catch (error) {
+    resHelper.error(res, error.status, error);
+  }
+};
+
+const cinemaController = {
+  getCinemaSchedule,
+  getCinemasByLocation,
+  getLocations,
+  getCinemasBySchedule,
+};
 module.exports = cinemaController;
