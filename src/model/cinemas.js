@@ -84,7 +84,49 @@ const getCinemasByLocation = (req) =>
 
 const getLocations = () =>
   new Promise((resolve, reject) => {
-    const query = "select id as location_id, location from locations";
+    const query =
+      "select id as location_id, location_name as location from locations";
+    db.query(query, (error, result) => {
+      if (error) {
+        console.log(error);
+        return reject({ status: 500, msg: "Internal Server Error" });
+      }
+      if (result.rows.length === 0)
+        return reject({ status: 404, msg: "Data Not Found" });
+      return resolve({ status: 200, msg: "List Cinemas", data: result.rows });
+    });
   });
-const cinemaRepo = { getCinemaSchedule, getCinemasByLocation };
+const getCinemasBySchedule = (req) =>
+  new Promise((resolve, reject) => {
+    const showtimeId = req.params.id;
+    const query = `select m.movie_name as movie, c.cinema_name as cinema, mcl.show_date, s.schedule as time, cl.price,
+    c.image
+    from showtimes_schedules ss
+    join movies_cinemas_locations mcl on mcl.id = ss.showtime_id
+    join cinemas_locations cl on cl.id = mcl.cinemas_locations_id
+    join movies m on m.id = mcl.movie_id
+    join schedules s on s.id = ss.schedule_id
+    join cinemas c on c.id = cl.cinema_id where ss.id = $1`;
+
+    db.query(query, [showtimeId], (error, result) => {
+      if (error) {
+        console.log(error);
+        return reject({ status: 500, msg: "Internal Server Error" });
+      }
+      if (result.rows.length === 0)
+        return reject({ status: 404, msg: "Data Not Found" });
+      return resolve({
+        status: 200,
+        msg: "List Cinemas",
+        data: result.rows[0],
+      });
+    });
+  });
+
+const cinemaRepo = {
+  getCinemaSchedule,
+  getCinemasByLocation,
+  getLocations,
+  getCinemasBySchedule,
+};
 module.exports = cinemaRepo;
