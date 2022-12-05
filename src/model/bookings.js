@@ -87,23 +87,20 @@ const getBookedSeats = (req) =>
 
 const updatePayment = (paymentStatus, ticketStatus, paymentId) =>
   new Promise((resolve, reject) => {
+    const values = [paymentStatus, ticketStatus, paymentId];
     const sqlUpdate =
       "update bookings set payment_status = $1, ticket_status = $2 where payment_id = $3 returning *";
-    db.query(
-      sqlUpdate,
-      [paymentStatus, ticketStatus, paymentId],
-      (error, result) => {
-        if (error) {
-          console.log(error);
-          return reject({ status: 500, msg: "Internal Server Error" });
-        }
-        return resolve({
-          status: 200,
-          msg: "Payment success",
-          data: result.rows[0],
-        });
+    db.query(sqlUpdate, values, (error, result) => {
+      if (error) {
+        console.log(error);
+        return reject({ status: 500, msg: "Internal Server Error" });
       }
-    );
+      return resolve({
+        status: 200,
+        msg: "Payment success",
+        data: result.rows[0],
+      });
+    });
   });
 const bookingRepo = {
   createBooking,
