@@ -107,7 +107,8 @@ const getTicketDetail = (req) =>
     const paymentId = req.params.id;
     const query = `select m.movie_name, string_agg(distinct(s.seat_code), ',') as seats,
     s2.schedule as time, b.ticket_total, mcl.show_date as show_date,
-    b.total_payment as price, m.age_category as category
+    b.total_payment as price, m.age_category as category,
+    b.payment_id as payment_id
     from bookings b
     join showtimes_schedules ss on ss.id = b.movie_schedule_id
     join movies_cinemas_locations mcl on ss.showtime_id = mcl.id
@@ -117,7 +118,8 @@ const getTicketDetail = (req) =>
     join schedules s2 on s2.id = ss.schedule_id
     where b.payment_id = $1
     group by m.movie_name, s2.schedule, b.ticket_total,
-    mcl.show_date, b.total_payment, m.age_category`;
+    mcl.show_date, b.total_payment, m.age_category,
+    b.payment_id`;
 
     db.query(query, [paymentId], (error, result) => {
       if (error) {
