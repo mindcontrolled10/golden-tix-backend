@@ -132,6 +132,69 @@ const getTicketDetail = (req) =>
       });
     });
   });
+
+const getBookingHistory = (req) =>
+  new Promise((resolve, reject) => {
+    const id = req.userData.id;
+    const { page, limit } = req.query;
+
+    const sqlCount = `select count(b.id) as count from bookings b
+    join users u on u.id = b.user_id where u.id = $1`;
+    db.query(sqlCount, [id], (error, result) => {
+      if (error) {
+        console.log(error);
+        return reject({ status: 500, msg: "Internal Server Error" });
+      }
+      if (result.rows.length === 0)
+        return resolve({ status: 404, msg: "Data not found", data: [] });
+      const totalData = parseInt(result.rows[0].count);
+      let link = "";
+      const sqlLimit = parseInt(limit) || 5;
+      const sqlOffset =
+        !page || page == "1" ? 0 : (parseInt(page) - 1) * sqlLimit;
+      const currentPage = parseInt(page) || 1;
+      const totalPage =
+        sqlLimit > totalData ? 1 : Math.ceil(totalData / sqlLimit);
+      const prev =
+        currentPage === 1
+          ? null
+          : link + `page=${currentPage - 1}&limit=${sqlLimit}`;
+      const next =
+        currentPage === totalPage
+          ? null
+          : link + `page=${currentPage + 1}&limit=${sqlLimit}`;
+
+      const meta = {
+        page: parseInt(currentPage),
+        totalData: parseInt(totalData),
+        limit: parseInt(sqlLimit),
+        prev,
+        next,
+      };
+
+      const sqlHistory = `select m.movie_name as movie, c.cinema_name as cinema, mcl.show_date as show_date,
+      b.ticket_status, c.image from bookings b
+      join users u on u.id = b.user_id
+      join showtimes_schedules ss on ss.id = b.movie_schedule_id
+      join movies_cinemas_locations mcl on mcl.id = ss.showtime_id
+      join movies m on m.id = mcl.movie_id
+      join cinemas_locations cl on cl.id = mcl.cinemas_locations_id
+      join cinemas c on c.id = cl.cinema_id
+      where u.id = $1 limit $2 offset $3`;
+      db.query(sqlHistory, [id, sqlLimit, sqlOffset], (error, result) => {
+        if (error) {
+          console.log(error);
+          return reject({ status: 500, msg: "Internal Server Error" });
+        }
+        return resolve({
+          status: 200,
+          msg: "User History",
+          data: result.rows,
+          meta,
+        });
+      });
+    });
+  });
 const bookingRepo = {
   createBooking,
   createBookingSeat,
@@ -139,6 +202,7 @@ const bookingRepo = {
   getBookedSeats,
   updatePayment,
   getTicketDetail,
+  getBookingHistory,
 };
 
 module.exports = bookingRepo;
