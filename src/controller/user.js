@@ -26,6 +26,16 @@ const editProfile = async (req, res) => {
   }
 };
 
-const userController = { getProfile, editProfile };
+const editPassword = async (req, res) => {
+  try {
+    const response = await userRepo.editPassword(req);
+    resHelper.success(res, response.status, response);
+  } catch (error) {
+    console.log(error);
+    resHelper.error(res, error.status, error);
+  }
+};
+
+const userController = { getProfile, editProfile, editPassword };
 
 module.exports = userController;
