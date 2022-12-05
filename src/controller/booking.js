@@ -94,11 +94,21 @@ const getTicketDetail = async (req, res) => {
     resHelper.error(res, error.status, error);
   }
 };
+
+const getBookingHistory = async (req, res) => {
+  try {
+    const response = await bookingRepo.getBookingHistory(req);
+    resHelper.success(res, response.status, response);
+  } catch (error) {
+    resHelper.error(res, error.status, error);
+  }
+};
 const bookingController = {
   createBooking,
   getBookedSeats,
   updateBooking,
   getSeats,
   getTicketDetail,
+  getBookingHistory,
 };
 module.exports = bookingController;
