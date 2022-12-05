@@ -1,26 +1,19 @@
-const midtransClient = require("midtrans-client");
 const resHelper = require("../helper/sendResponse");
 const bookingRepo = require("../model/bookings");
+const snap = require("../helper/midTrans");
 
-const coreApi = new midtransClient.CoreApi({
-  isProduction: false,
-  clientKey: process.env.CLIENT_KEY_MIDTRANS,
-  serverKey: process.env.SERVER_KEY_MIDTRANS,
-});
-
-const paymentMidtrans = async (total_payment, bank, payment_id) => {
-  const parameter = {
-    payment_type: "bank_transfer",
-    transaction_details: {
-      gross_amount: parseInt(total_payment),
-      order_id: payment_id,
-    },
-    bank_transfer: {
-      bank: bank,
-    },
-  };
-};
-
+// const paymentMidtrans = async (total_payment, bank, payment_id) => {
+//   const parameter = {
+//     payment_type: "bank_transfer",
+//     transaction_details: {
+//       gross_amount: parseInt(total_payment),
+//       order_id: payment_id,
+//     },
+//     bank_transfer: {
+//       bank: bank,
+//     },
+//   };
+// };
 const createBooking = async (req, res) => {
   try {
     const id = req.userData.id;
@@ -28,13 +21,45 @@ const createBooking = async (req, res) => {
     const paymentId = `Golden-tix-${Math.floor(
       100000 + Math.random() * 900000
     )}`;
+
     const booking = await bookingRepo.createBooking(body, id, paymentId);
+    let data = { booking_details: booking.data };
     console.log(booking.data.id);
     const bookingSeat = await bookingRepo.createBookingSeat(
       req.body.seatIds,
       booking.data.id
     );
-    resHelper.success(res, bookingSeat.status, bookingSeat);
+    data = { ...data, ordered_seat: bookingSeat.data };
+
+    let parameter = {
+      transaction_details: {
+        order_id: paymentId,
+        gross_amount: body.totalPayment,
+      },
+      credit_card: {
+        secure: true,
+      },
+    };
+    const redirectUrl = await snap
+      .createTransaction(parameter)
+      .then((transaction) => transaction.redirect_url);
+    data = { ...data, redirectUrl };
+    resHelper.success(res, 201, { status: 201, msg: "Success", data: data });
+  } catch (error) {
+    console.log(error);
+    resHelper.error(res, error.status, error);
+  }
+};
+const updateBooking = async (req, res) => {
+  try {
+    const { order_id, transaction_status } = req.body;
+    const ticketStatus = "Active";
+    const response = await bookingRepo.updatePayment(
+      transaction_status,
+      ticketStatus,
+      order_id
+    );
+    resHelper.success(res, response.status, response);
   } catch (error) {
     console.log(error);
     resHelper.error(res, error.status, error);
@@ -57,5 +82,10 @@ const getBookedSeats = async (req, res) => {
     resHelper.error(res, error.status, error);
   }
 };
-const bookingController = { createBooking, getBookedSeats, getSeats };
+const bookingController = {
+  createBooking,
+  getBookedSeats,
+  updateBooking,
+  getSeats,
+};
 module.exports = bookingController;
