@@ -8,8 +8,19 @@ const getCinemaSchedule = (req) =>
         status: 400,
         msg: "Please Input date, location and movie name on request query ",
       });
-    const query =
-      "select m.movie_name,  ss.id as showtime_id, cl.id as cinemas_locations_id, mcl.id _cinema_loc_id,c.cinema_name, l.location_name,cl.price, s.schedule, mcl.show_date from movies_cinemas_locations mcl left join movies m on mcl.movie_id = m.id left join showtimes_schedules ss on mcl.id = ss.showtime_id left join schedules s on s.id = ss.schedule_id left join cinemas_locations cl on cl.id  = mcl.cinemas_locations_id left join locations l on l.id = cl.location_id left join cinemas c on c.id = cl.cinema_id where m.movie_name = $1 and mcl.show_date = $2 and l.location_name = $3 group by m.movie_name, mcl.show_date, ss.id, c.cinema_name, cl.price, s.schedule, cl.id, mcl.id, mcl.show_date, l.location_name";
+    const query = `select ss.id as showtime_id, s.schedule, cl.price, c.cinema_name, c.image as cinema_img,
+    mcl.show_date, l.location_name 
+    from movies m 
+    join movies_cinemas_locations mcl on mcl.movie_id = m.id
+    join showtimes_schedules ss on ss.showtime_id = mcl.id
+    join schedules s on s.id = ss.schedule_id
+    join cinemas_locations cl on cl.id = mcl.cinemas_locations_id
+    join cinemas c on c.id = cl.cinema_id
+    join locations l on l.id = cl.location_id
+    where m.movie_name = $1 and mcl.show_date = $2
+    and l.location_name = $3
+    order by c.cinema_name`;
+
     db.query(query, [movie, date, location], (error, result) => {
       if (error) {
         console.log(error);
@@ -17,7 +28,41 @@ const getCinemaSchedule = (req) =>
       }
       if (result.rows.length === 0)
         return reject({ status: 404, msg: "Data Not Found" });
-      return resolve({ status: 200, msg: "List scheule", data: result.rows });
+
+      const showtime = [];
+      result.rows.forEach((data) => {
+        let showTimeData = showtime.find((datas) =>
+          datas.hasOwnProperty(data.cinema_name)
+        );
+
+        if (!showTimeData) {
+          showtime.push({
+            [data.cinema_name]: [
+              {
+                showtime_id: data.showtime_id,
+                schedule: data.schedule,
+              },
+            ],
+            price: data.price,
+            image: data.cinema_img,
+          });
+        }
+
+        if (showTimeData) {
+          showtime.find((datas) => {
+            if (
+              datas.hasOwnProperty(data.cinema_name) &&
+              !datas[data.cinema_name].includes(data.schedule)
+            ) {
+              datas[data.cinema_name].push({
+                showtime_id: data.showtime_id,
+                schedule: data.schedule,
+              });
+            }
+          });
+        }
+      });
+      return resolve({ status: 200, msg: "List scheule", data: showtime });
     });
   });
 
