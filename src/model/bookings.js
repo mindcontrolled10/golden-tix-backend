@@ -84,10 +84,33 @@ const getBookedSeats = (req) =>
       return resolve({ status: 200, msg: "seat list", data: result.rows });
     });
   });
+
+const updatePayment = (paymentStatus, ticketStatus, paymentId) =>
+  new Promise((resolve, reject) => {
+    const sqlUpdate =
+      "update bookings set payment_status = $1, ticket_status = $2 where payment_id = $3 returning *";
+    db.query(
+      sqlUpdate,
+      [paymentStatus, ticketStatus, paymentId],
+      (error, result) => {
+        if (error) {
+          console.log(error);
+          return reject({ status: 500, msg: "Internal Server Error" });
+        }
+        return resolve({
+          status: 200,
+          msg: "Payment success",
+          data: result.rows[0],
+        });
+      }
+    );
+  });
 const bookingRepo = {
   createBooking,
   createBookingSeat,
   getSeats,
   getBookedSeats,
+  updatePayment,
 };
+
 module.exports = bookingRepo;
