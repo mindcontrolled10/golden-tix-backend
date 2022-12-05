@@ -50,14 +50,17 @@ const createBooking = async (req, res) => {
     resHelper.error(res, error.status, error);
   }
 };
+
 const updateBooking = async (req, res) => {
+  const { order_id, transaction_status } = req.body;
   try {
-    const { order_id, transaction_status } = req.body;
-    const ticketStatus = "Active";
+    const status = transaction_status;
+    const status_ticket = "Active";
+    const payment_id = order_id;
     const response = await bookingRepo.updatePayment(
-      transaction_status,
-      ticketStatus,
-      order_id
+      status,
+      status_ticket,
+      payment_id
     );
     resHelper.success(res, response.status, response);
   } catch (error) {
@@ -65,6 +68,7 @@ const updateBooking = async (req, res) => {
     resHelper.error(res, error.status, error);
   }
 };
+
 const getSeats = async (req, res) => {
   try {
     const response = await bookingRepo.getSeats();
