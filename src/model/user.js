@@ -1,5 +1,5 @@
 const db = require("../config/postgre");
-
+const bcrypt = require("bcrypt");
 const getProfile = (id) => {
   return new Promise((resolve, reject) => {
     const sqlGetProfile =
@@ -69,6 +69,46 @@ const editProfile = (id, body, file) => {
   });
 };
 
-const userRepo = { getProfile, editProfile };
+const editPassword = (req) =>
+  new Promise((resolve, reject) => {
+    const { oldPassword, newPassword, confirmPassword } = req.body;
+    const id = req.userData.id;
+    if (newPassword !== confirmPassword)
+      return reject({
+        status: 400,
+        msg: "new password and confirm password isn't matched",
+      });
+    const sqlGetPassword = "select password from users where id = $1";
+    db.query(sqlGetPassword, [id], (error, result) => {
+      if (error) {
+        console.log(error);
+        return reject({ status: 500, msg: "Internal Server Error" });
+      }
+      const password = result.rows[0].password;
+      bcrypt.compare(oldPassword, password, (error, isSame) => {
+        if (error) {
+          console.log(error);
+          return reject({ status: 500, msg: "Internal Server Error" });
+        }
+        if (!isSame) return reject({ status: 403, msg: "Wrong old password" });
+
+        bcrypt.hash(newPassword, 10, (error, hashedPwd) => {
+          if (error) {
+            console.log(error);
+            return reject({ status: 500, msg: "Internal Server Error" });
+          }
+          const sqlUpdate = "update users set password = $1 where id = $2";
+          db.query(sqlUpdate, [hashedPwd, id], (error) => {
+            if (error) {
+              console.log(error);
+              return reject({ status: 500, msg: "Internal Server Error" });
+            }
+            return resolve({ status: 200, msg: "Password updated" });
+          });
+        });
+      });
+    });
+  });
+const userRepo = { getProfile, editProfile, editPassword };
 
 module.exports = userRepo;

@@ -5,7 +5,7 @@ const isLogin = require("../middleware/isLogin");
 const uploadFile = require("../middleware/uploadSingle");
 const uploadCloudinary = require("../middleware/cloudinary");
 
-const { getProfile, editProfile } = require("../controller/user");
+const { getProfile, editProfile, editPassword } = require("../controller/user");
 
 profileRouter.get("/profile", isLogin(), getProfile);
 
@@ -16,5 +16,5 @@ profileRouter.patch(
   uploadCloudinary,
   editProfile
 );
-
+profileRouter.patch("/edit-password", isLogin(), editPassword);
 module.exports = profileRouter;
