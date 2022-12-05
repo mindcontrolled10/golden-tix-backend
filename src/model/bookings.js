@@ -102,12 +102,43 @@ const updatePayment = (paymentStatus, ticketStatus, paymentId) =>
       });
     });
   });
+const getTicketDetail = (req) =>
+  new Promise((resolve, reject) => {
+    const paymentId = req.params.id;
+    const query = `select m.movie_name, string_agg(distinct(s.seat_code), ',') as seats,
+    s2.schedule as time, b.ticket_total, mcl.show_date as show_date,
+    b.total_payment as price, m.age_category as category
+    from bookings b
+    join showtimes_schedules ss on ss.id = b.movie_schedule_id
+    join movies_cinemas_locations mcl on ss.showtime_id = mcl.id
+    join movies m on mcl.movie_id = m.id
+    join booking_seats bs on bs.booking_id = b.id
+    join seats s on s.id = bs.seat_id
+    join schedules s2 on s2.id = ss.schedule_id
+    where b.payment_id = $1
+    group by m.movie_name, s2.schedule, b.ticket_total,
+    mcl.show_date, b.total_payment, m.age_category`;
+
+    db.query(query, [paymentId], (error, result) => {
+      if (error) {
+        console.log(error);
+        return reject({ status: 500, msg: "Internal Server Error" });
+      }
+      const seats = result.rows[0].seats.split(",");
+      return resolve({
+        status: 200,
+        msg: "Your ticket details",
+        data: { ...result.rows[0], seats: seats },
+      });
+    });
+  });
 const bookingRepo = {
   createBooking,
   createBookingSeat,
   getSeats,
   getBookedSeats,
   updatePayment,
+  getTicketDetail,
 };
 
 module.exports = bookingRepo;
