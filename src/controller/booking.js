@@ -40,5 +40,22 @@ const createBooking = async (req, res) => {
     resHelper.error(res, error.status, error);
   }
 };
-const bookingController = { createBooking };
+const getSeats = async (req, res) => {
+  try {
+    const response = await bookingRepo.getSeats();
+    resHelper.success(res, response.status, response);
+  } catch (error) {
+    resHelper.error(res, error.status, error);
+  }
+};
+
+const getBookedSeats = async (req, res) => {
+  try {
+    const response = await bookingRepo.getBookedSeats(req);
+    resHelper.success(res, response.status, response);
+  } catch (error) {
+    resHelper.error(res, error.status, error);
+  }
+};
+const bookingController = { createBooking, getBookedSeats, getSeats };
 module.exports = bookingController;

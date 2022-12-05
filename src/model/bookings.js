@@ -56,5 +56,38 @@ const createBookingSeat = (seats, bookingId) =>
       });
     });
   });
-const bookingRepo = { createBooking, createBookingSeat };
+const getSeats = () =>
+  new Promise((resolve, reject) => {
+    const query = "select id, seat_code from seats";
+    db.query(query, (error, result) => {
+      if (error) {
+        console.log(error);
+        return reject({ status: 500, msg: "Internal Server Error" });
+      }
+      const seatList = result.rows.map(
+        (e) => (e = { seat_id: e.id, seat_code: e.seat_code })
+      );
+      return resolve({ status: 200, msg: "seat list", data: seatList });
+    });
+  });
+
+const getBookedSeats = (req) =>
+  new Promise((resolve, reject) => {
+    const id = req.params.id;
+    const query =
+      "select s.id as seat_id, s.seat_code  from booking_seats bs join bookings b on b.id = bs.booking_id join showtimes_schedules ss on ss.id = b.movie_schedule_id join seats s on s.id = bs.seat_id where  ss.id = $1";
+    db.query(query, [id], (error, result) => {
+      if (error) {
+        console.log(error);
+        return reject({ status: 500, msg: "Internal Server Error" });
+      }
+      return resolve({ status: 200, msg: "seat list", data: result.rows });
+    });
+  });
+const bookingRepo = {
+  createBooking,
+  createBookingSeat,
+  getSeats,
+  getBookedSeats,
+};
 module.exports = bookingRepo;
