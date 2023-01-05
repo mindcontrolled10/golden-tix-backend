@@ -174,7 +174,7 @@ const getBookingHistory = (req) =>
         next,
       };
 
-      const sqlHistory = `select m.movie_name as movie, c.cinema_name as cinema, mcl.show_date as show_date,
+      const sqlHistory = `select b.payment_id, m.movie_name as movie, c.cinema_name as cinema, mcl.show_date as show_date,
       b.ticket_status, c.image from bookings b
       join users u on u.id = b.user_id
       join showtimes_schedules ss on ss.id = b.movie_schedule_id
