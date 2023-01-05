@@ -4,7 +4,7 @@ const getTimeStamp = require("../helper/getTimeStamp");
 const createBooking = (body, userId, paymentId) =>
   new Promise((resolve, reject) => {
     const { movieScheduleId, totalPayment, paymentMethodId } = body;
-    const totalSeat = JSON.parse(body.seatIds).length;
+    const totalSeat = body.seatIds.length;
     const values = [
       movieScheduleId,
       userId,
@@ -27,7 +27,7 @@ const createBooking = (body, userId, paymentId) =>
 
 const createBookingSeat = (seats, bookingId) =>
   new Promise((resolve, reject) => {
-    const seatList = JSON.parse(seats);
+    const seatList = seats;
     const prepareValues = [];
     let values = "VALUES";
     seatList.forEach((seatId, index, array) => {
