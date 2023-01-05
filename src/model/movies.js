@@ -170,16 +170,22 @@ const createMovieCast = (castIds, movieId) =>
 
 const getNowShowingMovies = (req) =>
   new Promise((resolve, reject) => {
-    const { page, limit } = req.query;
+    const { page, limit, search } = req.query;
     const sqlLimit = parseInt(limit) || 5;
     const sqlOffset =
       !page || page === "1" ? 0 : (parseInt(page) - 1) * sqlLimit;
 
-    const query =
-      "select distinct on (m.movie_name)  m.movie_name, m.image, string_agg(distinct (g.genre_name) , ', ')genres, m.id from movies m join movies_cinemas_locations mcl on mcl.movie_id = m.id join movies_genres mg on m.id = mg.movie_id join genres g on g.id = mg.genre_id where  mcl.show_date = current_date group by movie_name, m.image, m.id limit $1 offset $2";
+    let query =
+      "select distinct on (m.movie_name)  m.movie_name, m.image, string_agg(distinct (g.genre_name) , ', ')genres, m.id from movies m join movies_cinemas_locations mcl on mcl.movie_id = m.id join movies_genres mg on m.id = mg.movie_id join genres g on g.id = mg.genre_id where  mcl.show_date = current_date ";
 
-    const countQuery =
-      "select count (distinct movie_name) from movies m join movies_cinemas_locations mcl on mcl.movie_id = m.id where  mcl.show_date = current_date";
+    let countQuery =
+      "select count (distinct movie_name) from movies m join movies_cinemas_locations mcl on mcl.movie_id = m.id where  mcl.show_date = current_date ";
+
+    if (search) {
+      countQuery += `AND lower(m.movie_name) like lower('%${search}%') `;
+      query += `AND lower(m.movie_name) like lower('%${search}%')`;
+    }
+    query += "group by movie_name, m.image, m.id limit $1 offset $2";
     db.query(countQuery, (err, result) => {
       if (err) {
         console.log(err);
@@ -221,16 +227,22 @@ const getNowShowingMovies = (req) =>
 
 const getUpcomingMovies = (req) =>
   new Promise((resolve, reject) => {
-    const { page, limit } = req.query;
+    const { page, limit, search } = req.query;
     const sqlLimit = parseInt(limit) || 5;
     const sqlOffset =
       !page || page === "1" ? 0 : (parseInt(page) - 1) * sqlLimit;
 
-    const query =
-      "select distinct on (m.movie_name)  m.movie_name, m.image, string_agg(distinct (g.genre_name) , ',')genres, m.id from movies m join movies_cinemas_locations mcl on mcl.movie_id = m.id join movies_genres mg on m.id = mg.movie_id join genres g on g.id = mg.genre_id where  mcl.show_date > current_date and m.movie_name not in(select m2.movie_name from movies m2 join movies_cinemas_locations mcl2 on mcl2.movie_id = m2.id where mcl2.show_date = current_date) group by movie_name, m.image, m.id limit $1 offset $2";
+    let query =
+      "select distinct on (m.movie_name)  m.movie_name, m.image, string_agg(distinct (g.genre_name) , ',')genres, m.id from movies m join movies_cinemas_locations mcl on mcl.movie_id = m.id join movies_genres mg on m.id = mg.movie_id join genres g on g.id = mg.genre_id where  mcl.show_date > current_date and m.movie_name not in(select m2.movie_name from movies m2 join movies_cinemas_locations mcl2 on mcl2.movie_id = m2.id where mcl2.show_date = current_date) ";
 
-    const countQuery =
-      "select count (distinct movie_name) from movies m  join movies_cinemas_locations mcl on mcl.movie_id = m.id where  mcl.show_date > current_date and m.movie_name not in(select m2.movie_name from movies m2 join movies_cinemas_locations mcl2 on mcl2.movie_id = m2.id where mcl2.show_date = current_date)";
+    let countQuery =
+      "select count (distinct movie_name) from movies m  join movies_cinemas_locations mcl on mcl.movie_id = m.id where  mcl.show_date > current_date and m.movie_name not in(select m2.movie_name from movies m2 join movies_cinemas_locations mcl2 on mcl2.movie_id = m2.id where mcl2.show_date = current_date) ";
+    if (search) {
+      countQuery += `AND lower(m.movie_name) like lower('%${search}%')`;
+      query += `AND lower(m.movie_name) like lower('%${search}%') `;
+    }
+    console.log(query);
+    query += "group by movie_name, m.image, m.id limit $1 offset $2";
     db.query(countQuery, (err, result) => {
       if (err) {
         console.log(err);
