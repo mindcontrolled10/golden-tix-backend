@@ -182,7 +182,7 @@ const getBookingHistory = (req) =>
       join movies m on m.id = mcl.movie_id
       join cinemas_locations cl on cl.id = mcl.cinemas_locations_id
       join cinemas c on c.id = cl.cinema_id
-      where u.id = $1 limit $2 offset $3`;
+      where u.id = $1 order by b.created_at desc limit $2 offset $3`;
       db.query(sqlHistory, [id, sqlLimit, sqlOffset], (error, result) => {
         if (error) {
           console.log(error);
