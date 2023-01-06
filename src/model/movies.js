@@ -1,6 +1,6 @@
 const db = require("../config/postgre");
 const getTimeStamp = require("../helper/getTimeStamp");
-
+const { getMonthNumber } = require("../helper/getMonth");
 const createMovie = (req) => {
   return new Promise((resolve, reject) => {
     const { movieName, synopsis, releaseDate, duration, director, price } =
@@ -170,7 +170,7 @@ const createMovieCast = (castIds, movieId) =>
 
 const getNowShowingMovies = (req) =>
   new Promise((resolve, reject) => {
-    const { page, limit, search } = req.query;
+    const { page, limit, search, month } = req.query;
     const sqlLimit = parseInt(limit) || 5;
     const sqlOffset =
       !page || page === "1" ? 0 : (parseInt(page) - 1) * sqlLimit;
@@ -183,8 +183,9 @@ const getNowShowingMovies = (req) =>
 
     if (search) {
       countQuery += `AND lower(m.movie_name) like lower('%${search}%') `;
-      query += `AND lower(m.movie_name) like lower('%${search}%')`;
+      query += `AND lower(m.movie_name) like lower('%${search}%') `;
     }
+
     query += "group by movie_name, m.image, m.id limit $1 offset $2";
     db.query(countQuery, (err, result) => {
       if (err) {
@@ -227,7 +228,7 @@ const getNowShowingMovies = (req) =>
 
 const getUpcomingMovies = (req) =>
   new Promise((resolve, reject) => {
-    const { page, limit, search } = req.query;
+    const { page, limit, search, month } = req.query;
     const sqlLimit = parseInt(limit) || 5;
     const sqlOffset =
       !page || page === "1" ? 0 : (parseInt(page) - 1) * sqlLimit;
@@ -241,8 +242,17 @@ const getUpcomingMovies = (req) =>
       countQuery += `AND lower(m.movie_name) like lower('%${search}%')`;
       query += `AND lower(m.movie_name) like lower('%${search}%') `;
     }
-    console.log(query);
+
+    if (month) {
+      countQuery += `AND extract (month from mcl.show_date) = ${getMonthNumber(
+        month
+      )}`;
+      query += `AND extract (month from mcl.show_date) = ${getMonthNumber(
+        month
+      )} `;
+    }
     query += "group by movie_name, m.image, m.id limit $1 offset $2";
+    console.log(query);
     db.query(countQuery, (err, result) => {
       if (err) {
         console.log(err);
