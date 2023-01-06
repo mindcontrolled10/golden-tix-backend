@@ -258,9 +258,8 @@ const getUpcomingMovies = (req) =>
         console.log(err);
         return reject({ status: 500, msg: "Internal Sever Error" });
       }
-      if (result.rows.length === 0)
-        return reject({ status: 400, msg: "Movie not found" });
       const totalData = parseInt(result.rows[0].count);
+      if (!totalData) return reject({ status: 404, msg: "Movie not found" });
       const currentPage = parseInt(page) || 1;
       const totalPage =
         sqlLimit > totalData ? 1 : Math.ceil(totalData / sqlLimit);

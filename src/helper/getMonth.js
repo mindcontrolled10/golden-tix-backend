@@ -15,5 +15,6 @@ const monthNameToNumber = {
 
 module.exports = {
   getMonthNumber: (monthName) =>
-    monthName in monthNameToNumber && monthNameToNumber[monthName],
+    monthName.toLowerCase() in monthNameToNumber &&
+    monthNameToNumber[monthName.toLowerCase()],
 };
